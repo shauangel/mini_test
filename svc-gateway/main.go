@@ -46,16 +46,19 @@ func main() {
     userURL := getenv("USER_SERVICE_URL", "http://127.0.0.1:8001/user/info")
     orderURL := getenv("ORDER_SERVICE_URL", "http://127.0.0.1:8002/order/create")
 
+    log.Println("gateway: USER_SERVICE_URL =", userURL)
+    log.Println("gateway: ORDER_SERVICE_URL =", orderURL)
+
     mux.HandleFunc("/api/user", proxy(userURL))
     mux.HandleFunc("/api/order", proxy(orderURL))
 
-	srv := &http.Server{
-		Addr:         ":8003",
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-	}
+    srv := &http.Server{
+        Addr:         ":8003",
+        Handler:      mux,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 5 * time.Second,
+    }
 
-	log.Println("svc-payment listening on :8003")
-	log.Fatal(srv.ListenAndServe())
+    log.Println("svc-gateway listening on :8003")
+    log.Fatal(srv.ListenAndServe())
 }

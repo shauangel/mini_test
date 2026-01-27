@@ -18,7 +18,6 @@ func getenv(key, def string) string {
 
 var httpClient = &http.Client{Timeout: 2 * time.Second}
 
-
 func main() {
     mux := http.NewServeMux()
 
@@ -27,6 +26,7 @@ func main() {
     })
 
     paymentURL := getenv("PAYMENT_URL", "http://127.0.0.1:8003/payment/charge")
+    log.Println("order: PAYMENT_URL =", paymentURL)
 
     mux.HandleFunc("/order/create", func(w http.ResponseWriter, r *http.Request) {
         log.Println("order: /order/create called")
@@ -43,13 +43,13 @@ func main() {
         fmt.Fprintf(w, "order-ok -> %s", string(body))
     })
 
-	srv := &http.Server{
-		Addr:         ":8002",
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-	}
+    srv := &http.Server{
+        Addr:         ":8002",
+        Handler:      mux,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 5 * time.Second,
+    }
 
-	log.Println("svc-order listening on :8002")
-	log.Fatal(srv.ListenAndServe())
+    log.Println("svc-order listening on :8002")
+    log.Fatal(srv.ListenAndServe())
 }
