@@ -1,0 +1,54 @@
+services:
+  svc-payment:
+    build:
+      context: .
+      dockerfile: ./svc-payment/Dockerfile
+    container_name: svc-payment
+    ports:
+      - "8000:8000"
+    networks:
+      - demo-net
+
+  svc-order:
+    build:
+      context: .
+      dockerfile: ./svc-order/Dockerfile
+    container_name: svc-order
+    environment:
+      - PAYMENT_URL=http://svc-payment:8000/payment/charge
+    ports:
+      - "8002:8002"
+    networks:
+      - demo-net
+    depends_on:
+      - svc-payment
+
+  svc-user:
+    build:
+      context: .
+      dockerfile: ./svc-user/Dockerfile
+    container_name: svc-user
+    ports:
+      - "8001:8001"
+    networks:
+      - demo-net
+
+  svc-gateway:
+    build:
+      context: .
+      dockerfile: ./svc-gateway/Dockerfile
+    container_name: svc-gateway
+    environment:
+      - USER_SERVICE_URL=http://svc-user:8001/user/info
+      - ORDER_SERVICE_URL=http://svc-order:8002/order/create
+    ports:
+      - "8003:8003"
+    networks:
+      - demo-net
+    depends_on:
+      - svc-user
+      - svc-order
+
+networks:
+  demo-net:
+    driver: bridge
