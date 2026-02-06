@@ -59,6 +59,13 @@ int handle_connect(struct trace_event_raw_sys_enter *ctx)
 
     __u32 addr = sa4.sin_addr.s_addr;
 
+    bpf_printk("svc-connect: %s -> port %d\n", comm, dport);
+    return 0;
+}
+
+
+
+
 /*    bpf_printk("svc-connect: %s -> %d.%d.%d.%d:%d\n",
                comm,
                addr & 0xff,
@@ -67,6 +74,3 @@ int handle_connect(struct trace_event_raw_sys_enter *ctx)
                (addr >> 24) & 0xff,
                dport);
 */
-    bpf_printk("svc-connect: %s -> port %d\n", comm, dport);
-    return 0;
-}
