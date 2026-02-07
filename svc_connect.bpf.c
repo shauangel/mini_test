@@ -31,6 +31,7 @@ struct my_sockaddr_in {
     __u8  pad[8];
 };
 
+// Can only see in
 SEC("tracepoint/syscalls/sys_enter_connect")
 int handle_connect(struct trace_event_raw_sys_enter *ctx)
 {
@@ -60,6 +61,16 @@ int handle_connect(struct trace_event_raw_sys_enter *ctx)
     __u32 addr = sa4.sin_addr.s_addr;
 
     bpf_printk("svc-connect: %s -> port %d\n", comm, dport);
+    return 0;
+}
+
+
+SEC("tracepoint/syscalls/sys_enter_accept4")
+int trace_accept(struct trace_event_raw_sys_enter *ctx)
+{
+    char comm[16];
+    bpf_get_current_comm(&comm, sizeof(comm));
+    bpf_printk("svc-accept: %s is accepting()\n", comm);
     return 0;
 }
 
