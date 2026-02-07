@@ -8,10 +8,21 @@
 char LICENSE[] SEC("license") = "GPL";
 u32 _version SEC("version") = LINUX_VERSION_CODE;
 
-
 SEC("kprobe/tcp_v4_connect")
 int BPF_KPROBE(handle_tcp_v4_connect, struct sock *sk){
     __u16 sport = 0, dport = 0;
     __u32 saddr = 0, daddr = 0;
 
+    // Map socket common fields
+    sport = BPF_CORE_READ(sk, __sk_common.skc_num);
+    dport = BPF_CORE_READ(sk, __sk_common.skc_dport);
+    saddr = BPF_CORE_READ(sk, __sk_common.skc_rcv_saddr);
+    daddr = BPF_CORE_READ(sk, __sk_common.skc_daddr);
+
+    //Convert dport from network byte order to host byte order
+    dport = __bpf_ntohs(dport);
+
+    bpf_printk("tcp_v4_connect: sport=%d, dport=%d, saddr=%x, daddr=%x\n", sport, dport, saddr, daddr);
+
+    return 0;
 }
