@@ -9,7 +9,8 @@
 char LICENSE[] SEC("license") = "GPL";
 
 SEC("kprobe/tcp_v4_connect")
-int BPF_KPROBE(k_tcp_v4_connect, struct sock *sk){
+int BPF_KPROBE(struct pt_regs *ctx){
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
     __u16 sport = 0, dport = 0;
     __u32 saddr = 0, daddr = 0;
 
