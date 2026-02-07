@@ -4,12 +4,12 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
+#include <bpf/bpf_endian.h>
 
 char LICENSE[] SEC("license") = "GPL";
-u32 _version SEC("version") = LINUX_VERSION_CODE;
 
 SEC("kprobe/tcp_v4_connect")
-int BPF_KPROBE(handle_tcp_v4_connect, struct sock *sk){
+int BPF_KPROBE(k_tcp_v4_connect, struct sock *sk){
     __u16 sport = 0, dport = 0;
     __u32 saddr = 0, daddr = 0;
 
@@ -20,9 +20,9 @@ int BPF_KPROBE(handle_tcp_v4_connect, struct sock *sk){
     daddr = BPF_CORE_READ(sk, __sk_common.skc_daddr);
 
     //Convert dport from network byte order to host byte order
-    dport = __bpf_ntohs(dport);
+    __u16 dport_cov = bpf_ntohs(dport);
 
-    bpf_printk("tcp_v4_connect: sport=%d, dport=%d, saddr=%x, daddr=%x\n", sport, dport, saddr, daddr);
+    bpf_printk("tcp_v4_connect: sport=%d, dport=%d, saddr=%x, daddr=%x\n", sport, dport_cov, saddr, daddr);
 
     return 0;
 }
