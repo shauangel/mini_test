@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.38.0 (HEAD)
+  labels:
+    io.kompose.service: svc-payment
+  name: svc-payment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: svc-payment
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.38.0 (HEAD)
+      labels:
+        io.kompose.service: svc-payment
+    spec:
+      containers:
+        - image: svc-payment
+          name: svc-payment
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+      restartPolicy: Always
