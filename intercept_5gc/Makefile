@@ -3,7 +3,9 @@ CC ?= gcc
 BPFTOOL ?= bpftool
 
 CFLAGS := -O2 -g
-BPF_CFLAGS := -O2 -g -target bpf
+BPF_CFLAGS := -O2 -g -target bpf \
+	-I/usr/include \
+	-I/usr/include/x86_64-linux-gnu
 
 LIBS := -lbpf -lelf -lz
 
