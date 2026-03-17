@@ -43,10 +43,9 @@ int BPF_KPROBE(nrf_http_search)
     return submit_event(2);
 }
 
-/*
-SEC("uprobe/nrf_handle_register")
-int nrf_handle_register(struct pt_regs *ctx)
+
+SEC("uprobe/nrf_http_get")
+int BPF_KPROBE(struct pt_regs *ctx)
 {
     return submit_event(3);
 }
-*/
