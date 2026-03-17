@@ -24,14 +24,6 @@ static void sig_handler(int sig)
     exiting = 1;
 }
 
-/*
- * 掃 /proc/*/cmdline，找出 free5GC NRF process
- * 成功:
- *   - 回傳 pid
- *   - exe_path 會被填成 /proc/<pid>/exe 對應的絕對路徑
- * 失敗:
- *   - 回傳 -1
- */
 static int find_nrf_exe(char *exe_path, size_t exe_path_sz)
 {
     DIR *dp;
@@ -156,14 +148,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /*
-     * 你目前 nm 出來的 offset：
-     * 0xcce560 -> github.com/free5gc/nrf/internal/sbi.(*Server).HTTPRegisterNFInstance
-     * 0xccdf60 -> github.com/free5gc/nrf/internal/sbi.(*Server).HTTPSearchNFInstances
-     * 0xcb2ba0 -> github.com/free5gc/nrf/internal/sbi/processor.(*Processor).HandleNFRegisterRequest
-     *
-     * 注意：如果 free5GC binary rebuild 過，offset 可能會變。
-     */
 
     link1 = bpf_program__attach_uprobe(
         skel->progs.nrf_http_register,
