@@ -110,9 +110,11 @@ static int handle_event(void *ctx, void *data, size_t len)
     case 2:
         api = "HTTPSearchNFInstances";
         break;
+/*
     case 3:
         api = "HandleNFRegisterRequest";
         break;
+*/
     default:
         break;
     }
@@ -174,7 +176,7 @@ int main(int argc, char **argv)
         err = 1;
         goto cleanup;
     }
-
+/*
     link3 = bpf_program__attach_uprobe(
         skel->progs.nrf_handle_register,
         false,
@@ -187,7 +189,7 @@ int main(int argc, char **argv)
         err = 1;
         goto cleanup;
     }
-
+*/
     rb = ring_buffer__new(bpf_map__fd(skel->maps.events), handle_event, NULL, NULL);
     if (!rb) {
         fprintf(stderr, "failed to create ring buffer\n");
