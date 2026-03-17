@@ -7,7 +7,7 @@
 #include <sys/resource.h>
 
 #include <bpf/libbpf.h>
-#include "conn_tracer.skel.h"
+#include "nrf_conn_tracer.skel.h"
 #include "events.h"
 
 static volatile sig_atomic_t exiting = 0;
@@ -33,7 +33,7 @@ static int handle_conn_event(void *ctx, void *data, size_t len)
 
 int main(void)
 {
-    struct conn_tracer_bpf *skel = NULL;
+    struct nrf_conn_tracer_bpf *skel = NULL;
     struct ring_buffer *rb = NULL;
     struct bpf_link *link = NULL;
     int err = 0;
@@ -44,7 +44,7 @@ int main(void)
     if (bump_memlock_rlimit())
         fprintf(stderr, "failed to bump memlock: %s\n", strerror(errno));
 
-    skel = conn_tracer_bpf__open_and_load();
+    skel = nrf_conn_tracer_bpf__open_and_load();
     if (!skel) {
         fprintf(stderr, "failed to open/load conn tracer skeleton\n");
         return 1;
@@ -82,6 +82,6 @@ int main(void)
 cleanup:
     ring_buffer__free(rb);
     bpf_link__destroy(link);
-    conn_tracer_bpf__destroy(skel);
+    nrf_conn_tracer_bpf__destroy(skel);
     return err;
 }

@@ -10,7 +10,7 @@
 #include <sys/resource.h>
 
 #include <bpf/libbpf.h>
-#include "api_tracer.skel.h"
+#include "nrf_api_tracer.skel.h"
 #include "events.h"
 
 static volatile sig_atomic_t exiting = 0;
@@ -116,7 +116,7 @@ static int handle_api_event(void *ctx, void *data, size_t len)
 
 int main(void)
 {
-    struct api_tracer_bpf *skel = NULL;
+    struct nrf_api_tracer_bpf *skel = NULL;
     struct ring_buffer *rb = NULL;
     struct bpf_link *link1 = NULL, *link2 = NULL, *link3 = NULL;
     char exe_path[PATH_MAX];
@@ -152,7 +152,7 @@ int main(void)
 
     printf("Found NRF pid=%d exe=%s\n", target_pid, exe_path);
 
-    skel = api_tracer_bpf__open_and_load();
+    skel = nrf_api_tracer_bpf__open_and_load();
     if (!skel) {
         fprintf(stderr, "failed to open/load api tracer skeleton\n");
         return 1;
@@ -211,6 +211,6 @@ cleanup:
     bpf_link__destroy(link1);
     bpf_link__destroy(link2);
     bpf_link__destroy(link3);
-    api_tracer_bpf__destroy(skel);
+    nrf_api_tracer_bpf__destroy(skel);
     return err;
 }
