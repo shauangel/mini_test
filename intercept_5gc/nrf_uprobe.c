@@ -8,6 +8,7 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#include <sys/resource.h>
 
 #include <bpf/libbpf.h>
 #include "nrf_uprobe.skel.h"
@@ -72,22 +73,16 @@ static int find_nrf_exe(char *exe_path, size_t exe_path_sz)
 
         cmdline[nread] = '\0';
 
-        /*
-         * /proc/<pid>/cmdline 是以 '\0' 分隔參數
-         * 我們只要判斷裡面有沒有 nrf 可執行檔
-         */
         if (strstr(cmdline, "./bin/nrf") == NULL &&
             strstr(cmdline, "/bin/nrf") == NULL &&
-            strstr(cmdline, " bin/nrf") == NULL &&
             strstr(cmdline, "free5gc/bin/nrf") == NULL) {
             continue;
         }
 
         snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%s/exe", name);
         llen = readlink(proc_exe_path, exe_path, exe_path_sz - 1);
-        if (llen < 0) {
+        if (llen < 0)
             continue;
-        }
 
         exe_path[llen] = '\0';
         closedir(dp);
@@ -117,7 +112,7 @@ static int handle_event(void *ctx, void *data, size_t len)
         break;
     }
 
-    printf("pid=%u api=%s\n", e->pid, api);
+    printf("api=%s\n", api);
     fflush(stdout);
     return 0;
 }
@@ -136,6 +131,7 @@ int main(int argc, char **argv)
     char exe_path[PATH_MAX];
     int target_pid;
     int err = 0;
+
     LIBBPF_OPTS(bpf_uprobe_opts, opts_register,
         .retprobe = false,
         .func_name = "github.com/free5gc/nrf/internal/sbi.(*Server).HTTPRegisterNFInstance"
@@ -174,40 +170,43 @@ int main(int argc, char **argv)
 
     link1 = bpf_program__attach_uprobe_opts(
         skel->progs.nrf_http_register,
-        -1,
-        bin,
+        target_pid,
+        exe_path,
         0,
         &opts_register
     );
-    if (!link1) {
-        fprintf(stderr, "failed to attach HTTPRegisterNFInstance by symbol\n");
-        err = 1;
+    if (libbpf_get_error(link1)) {
+        err = -libbpf_get_error(link1);
+        link1 = NULL;
+        fprintf(stderr, "failed to attach HTTPRegisterNFInstance by symbol: %d\n", err);
         goto cleanup;
     }
 
     link2 = bpf_program__attach_uprobe_opts(
         skel->progs.nrf_http_search,
-        -1,
-        bin,
+        target_pid,
+        exe_path,
         0,
         &opts_search
     );
-    if (!link2) {
-        fprintf(stderr, "failed to attach HTTPSearchNFInstances by symbol\n");
-        err = 1;
+    if (libbpf_get_error(link2)) {
+        err = -libbpf_get_error(link2);
+        link2 = NULL;
+        fprintf(stderr, "failed to attach HTTPSearchNFInstances by symbol: %d\n", err);
         goto cleanup;
     }
 
     link3 = bpf_program__attach_uprobe_opts(
         skel->progs.nrf_http_get,
-        -1,
-        bin,
+        target_pid,
+        exe_path,
         0,
         &opts_get
     );
-    if (!link3) {
-        fprintf(stderr, "failed to attach HTTPGetNFInstance by symbol\n");
-        err = 1;
+    if (libbpf_get_error(link3)) {
+        err = -libbpf_get_error(link3);
+        link3 = NULL;
+        fprintf(stderr, "failed to attach HTTPGetNFInstance by symbol: %d\n", err);
         goto cleanup;
     }
 
