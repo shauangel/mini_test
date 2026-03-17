@@ -110,11 +110,9 @@ static int handle_event(void *ctx, void *data, size_t len)
     case 2:
         api = "HTTPSearchNFInstances";
         break;
-/*
     case 3:
-        api = "HandleNFRegisterRequest";
+        api = "HTTPGetNFInstance";
         break;
-*/
     default:
         break;
     }
@@ -122,6 +120,12 @@ static int handle_event(void *ctx, void *data, size_t len)
     printf("pid=%u api=%s\n", e->pid, api);
     fflush(stdout);
     return 0;
+}
+
+static int bump_memlock_rlimit(void)
+{
+    struct rlimit rlim = {RLIM_INFINITY, RLIM_INFINITY};
+    return setrlimit(RLIMIT_MEMLOCK, &rlim);
 }
 
 int main(int argc, char **argv)
@@ -132,9 +136,27 @@ int main(int argc, char **argv)
     char exe_path[PATH_MAX];
     int target_pid;
     int err = 0;
+    LIBBPF_OPTS(bpf_uprobe_opts, opts_register,
+        .retprobe = false,
+        .func_name = "github.com/free5gc/nrf/internal/sbi.(*Server).HTTPRegisterNFInstance"
+    );
+
+    LIBBPF_OPTS(bpf_uprobe_opts, opts_search,
+        .retprobe = false,
+        .func_name = "github.com/free5gc/nrf/internal/sbi.(*Server).HTTPSearchNFInstances"
+    );
+
+    LIBBPF_OPTS(bpf_uprobe_opts, opts_get,
+        .retprobe = false,
+        .func_name = "github.com/free5gc/nrf/internal/sbi.(*Server).HTTPGetNFInstance"
+    );
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
+
+    if (bump_memlock_rlimit()) {
+        fprintf(stderr, "failed to increase RLIMIT_MEMLOCK: %s\n", strerror(errno));
+    }
 
     target_pid = find_nrf_exe(exe_path, sizeof(exe_path));
     if (target_pid < 0) {
@@ -150,46 +172,45 @@ int main(int argc, char **argv)
         return 1;
     }
 
-
-    link1 = bpf_program__attach_uprobe(
+    link1 = bpf_program__attach_uprobe_opts(
         skel->progs.nrf_http_register,
-        false,          // entry uprobe
-        target_pid,     // 只 attach 到目前找到的 NRF pid
-        exe_path,
-        0xcce560
+        -1,
+        bin,
+        0,
+        &opts_register
     );
     if (!link1) {
-        fprintf(stderr, "failed to attach register uprobe: %s\n", strerror(errno));
+        fprintf(stderr, "failed to attach HTTPRegisterNFInstance by symbol\n");
         err = 1;
         goto cleanup;
     }
 
-    link2 = bpf_program__attach_uprobe(
+    link2 = bpf_program__attach_uprobe_opts(
         skel->progs.nrf_http_search,
-        false,
-        target_pid,
-        exe_path,
-        0xccdf60
+        -1,
+        bin,
+        0,
+        &opts_search
     );
     if (!link2) {
-        fprintf(stderr, "failed to attach search uprobe: %s\n", strerror(errno));
+        fprintf(stderr, "failed to attach HTTPSearchNFInstances by symbol\n");
         err = 1;
         goto cleanup;
     }
-/*
-    link3 = bpf_program__attach_uprobe(
-        skel->progs.nrf_handle_register,
-        false,
-        target_pid,
-        exe_path,
-        0xcb2ba0
+
+    link3 = bpf_program__attach_uprobe_opts(
+        skel->progs.nrf_http_get,
+        -1,
+        bin,
+        0,
+        &opts_get
     );
     if (!link3) {
-        fprintf(stderr, "failed to attach internal register handler uprobe: %s\n", strerror(errno));
+        fprintf(stderr, "failed to attach HTTPGetNFInstance by symbol\n");
         err = 1;
         goto cleanup;
     }
-*/
+
     rb = ring_buffer__new(bpf_map__fd(skel->maps.events), handle_event, NULL, NULL);
     if (!rb) {
         fprintf(stderr, "failed to create ring buffer\n");
@@ -200,12 +221,15 @@ int main(int argc, char **argv)
     printf("Tracing NRF uprobes... Ctrl-C to stop.\n");
 
     while (!exiting) {
-        err = ring_buffer__poll(rb, 200);
+        err = ring_buffer__poll(rb, 100);
+        if (err == -EINTR) {
+            err = 0;
+            break;
+        }
         if (err < 0) {
             fprintf(stderr, "ring_buffer__poll failed: %d\n", err);
             break;
         }
-        err = 0;
     }
 
 cleanup:
