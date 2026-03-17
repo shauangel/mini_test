@@ -2,7 +2,7 @@ CLANG ?= clang
 CC ?= gcc
 BPFTOOL ?= bpftool
 
-CFLAGS := -O2 -g
+CFLAGS := -O2 -g -D__USER_SPACE__
 BPF_CFLAGS := -O2 -g -target bpf \
 	-I/usr/include \
 	-I/usr/include/x86_64-linux-gnu

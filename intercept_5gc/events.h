@@ -1,7 +1,12 @@
 #ifndef __EVENTS_H__
 #define __EVENTS_H__
 
-#include <linux/types.h>
+#ifdef __USER_SPACE__
+#include <stdint.h>
+typedef uint64_t __u64;
+typedef uint32_t __u32;
+typedef uint16_t __u16;
+#endif
 
 enum event_kind {
     EVENT_API  = 1,
