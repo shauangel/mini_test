@@ -45,7 +45,7 @@ int BPF_KPROBE(nrf_http_search)
 
 
 SEC("uprobe/nrf_http_get")
-int BPF_KPROBE(struct pt_regs *ctx)
+int BPF_KPROBE(nrf_http_get)
 {
     return submit_event(3);
 }
